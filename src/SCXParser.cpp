@@ -4,11 +4,14 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string>
 
 #include "parser/SC3Argument.h"
 #include "parser/CCDisassembler.h"
+#include "parser/SC3StringDecoder.h"
+#include "parser/CCCharset.h"
 #include "parser/SCXFile.h"
 #include "parser/SC3CodeBlock.h"
 
@@ -84,10 +87,32 @@ std::string SC3ArgumentToString(const SC3Argument &arg) {
   return "unrecognized";
 }
 
-int main() {
+std::string GetFirstSC3String(const std::vector<std::string> &stringTable,
+                              const SC3Instruction *inst) {
+  for (const auto &arg : inst->args()) {
+    if (arg.type == StringRef) {
+      if (arg.uint16_value < stringTable.size())
+        return "\t; " + stringTable[arg.uint16_value];
+      return "";
+    }
+  }
+  return "";
+}
+
+int main(int argc, char**argv) {
   std::vector<std::pair<uint8_t *, std::streamsize>> files;
 
+#if 0 && defined(_DEBUG)
   std::string path = "G:\\Games\\SGTL\\CCEnVitaPatch101\\script_dis";
+  std::string path = "G:\\Games\\SGTL\\CCEnVitaPatch101\\script_dis";
+#else
+  if (argc < 2)
+  {
+	  std::wcerr << L"Missing argument directory.\n";
+	  std::exit(1);
+  }
+  std::string path(argv[1]);
+#endif
 
   int fileId = 0;
   for (auto &p : std::experimental::filesystem::directory_iterator(path)) {
@@ -104,8 +129,12 @@ int main() {
     SCXFile scx(buf, size, p.path().filename().string(), fileId++);
     CCDisassembler dis(scx);
     dis.DisassembleFile();
+    SC3StringDecoder strdec(scx, CCCharset);
+    const std::vector<std::string> stringTable =
+        strdec.decodeStringTableToUtf8();
 
-    std::ofstream outFile(outPath, std::ios::out | std::ios::trunc);
+    std::ofstream outFile(outPath,
+                          std::ios::out | std::ios::trunc | std::ios::binary);
     int i = 0;
     for (const auto &label : scx.disassembly()) {
       outFile << "\n#label" << i << "_" << label->address() << ":\n";
@@ -127,6 +156,7 @@ int main() {
             if (i < argCount) outFile << ", ";
           }
           outFile << ")";
+          outFile << GetFirstSC3String(stringTable, inst.get());
         }
         outFile << "\n";
       }
