@@ -177,9 +177,12 @@ bool SC3StringDecoder::decodeToken(std::ostream& stream) {
       break;
     }
     default: {
-      std::stringstream error;
-      error << "Unrecognized string token " << (int)tokenType;
-      throw std::runtime_error(error.str());
+      //std::stringstream error;
+      //error << "Unrecognized string token " << (int)tokenType;
+      //throw std::runtime_error(error.str());
+      stream << "[tok-";
+      print(stream, tokenType);
+      stream << "]";
     }
   }
 

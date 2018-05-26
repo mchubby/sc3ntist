@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -98,10 +99,19 @@ std::string GetFirstSC3String(const std::vector<std::string> &stringTable,
   return "";
 }
 
-int main() {
+int main(int argc, char**argv) {
   std::vector<std::pair<uint8_t *, std::streamsize>> files;
 
+#if 0 && defined(_DEBUG)
   std::string path = "G:\\Games\\SGTL\\CCEnVitaPatch101\\script_dis";
+#else
+  if (argc < 2)
+  {
+	  std::wcerr << L"Missing argument directory.\n";
+	  std::exit(1);
+  }
+  std::string path(argv[1]);
+#endif
 
   int fileId = 0;
   for (auto &p : std::experimental::filesystem::directory_iterator(path)) {
